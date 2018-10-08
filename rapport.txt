@@ -1,0 +1,189 @@
+1.9 ====================
+Création du fichier /etc/locale.gen avec les locales dont on a besoin (ici fr_FR.UTF-8).
+
+
+cmd :$ locale-gen 
+pour générer les locales spécifées dans /etc/locale.gen
+
+
+cmd :$ locale -a 
+pour vérifier que les locales ont bien été générées.
+
+
+cmd :$ eselect locale list 
+affiche les locales disponibles qu'on peut appliquer à tout le système.
+
+
+cmd :$ eselect locale <valeur>
+permet de choisir la locale <valeur> parmis les locales disponibles qui ont été affichés par la commande précédente.
+
+
+cmd :$ env-update && source /etc/profile
+permet de recharger l'environement.
+
+
+cmd :$ date 
+permet de vérifier que l'heure locale est bien configurée. Dans mon cas, c'était bien le cas, sinon il faut 
+utiliser la commande ntpd pour bien configurer, ou bien timedatectl (pour ceux qui ont installé systemd).
+
+Une autre méthode pour configurer le fuseau horaire serait avec "timezone-data" :
+
+cmds :
+$ echo "Europe/Paris" > /etc/timezone
+$ emerge --config sys-libs/timezone-data
+Pour avoir la liste des timezones disponibles :
+$ ls /usr/share/zoneinfo/
+
+Éditer la varibale "hostname" du fichier /etc/conf.d/hostname pour changer le nom d'hôte. 
+
+cmd :$ ifconfig
+Permet de trouver le nom de l'interface réseau à configurer (dans le cas d'une VM cela sera ethX / enp0sX)
+
+cmds :
+$ emerge --ask net-misc/dhcpcd
+$ dhcpd <interface>
+Lance la configuration automatique du protocole DHCP de l'interface choisie.
+
+
+Éditer le fichier /etc/fstab pour configurer le montage automatique au démarrage des partitions. 
+
+1.10 ===================
+
+cmd :$ emerge --ask sys-process/htop
+Installe htop.
+
+1.11 ===================
+
+cmd :$ emerge --ask sys-kernel/gentoo-sources 
+Télécharge les sources du noyau.
+
+1.12 ===================
+
+cmd :$ emerge --ask sys-apps/pciutils
+installe le package pciutils qui regroupe plusieurs outils qui permettent d'intéragir avec le bus PCI
+
+cmd :$ lspci
+Liste le matériel de la machine, ceci est important puisqu'il est impossible de bien configurer le kernel dans certains cas sans connaître 
+sans matériel, (dans la plupart des cas, avec du matériel récent, le kernel pourra être configuré automatiquement).
+
+1.13 ==================
+
+cmd :$ cd /usr/src/linux && make menuconfig
+Lance le menu de configuration, ici il faut activer/désactiver les options de compilation.
+
+1.14 ==================
+
+cmd :$ make -j4 && make modules_install
+Compilation et installation du kernel, avec un maximum de 4 tâches parallèles autorisées.
+
+cmd :$ make install
+Copie l'image du noyau vers /boot/
+
+Il est possible de laisser l'outil "genkernel" configurer automatiquement les options de compilation.
+Cependant cette option prendra du temps, puisque l'outil prends compte de la plupart des machines.
+
+cmds :
+$ emerge sys-boot/grub:2
+$ grub-install /dev/sda
+$ grub-mkconfig -o /boot/grub/grub.cfg
+Installe et configure le grub
+
+1.15 =================
+
+cmd :$ passwd
+Écrase le mot de passe du root.
+
+cmds :
+$ emerge --ask app-admin/sysklogd
+$ emerge --ask app-admin/logrotate	
+$ rc-update add sysklogd default
+$ rc-update add logrotate default
+Installe les outils de gestion de logs, et les configure pour être lancés au démarrage.
+
+cmds :
+$ emerge --ask sys-process/cronie
+$ emerge --ask sys-apps/mlocate
+$ rc-update add cronie default
+$ rc-update add sshd default
+
+Installation et configuration du cron daemon, indexeur de fichiers, et l'accès à distance via ssh.
+
+1.16 =================
+
+cmd :$ logout
+sort du chroot
+
+cmds :
+$ umount -l /mnt/gentoo/dev{/shm,/pts,}
+$ umount -R /mnt/gentoo
+$ reboot 
+Démonte les partitions et redémarre.
+
+1.17 =================
+
+Après redémarage on se connecte en tant que root.
+
+cmds :
+$ useradd -a -G sudo,wheel -s /bin/bash red	
+$ passwd red 
+$ emerge app-admin/sudo 
+Ajoute un nouvel utilisateur red, lui donne un mot de passe, puis la possibilité d'exécuter des commandes en mode sudo.
+Puis on rajoute la ligne "%sudo ALL=(ALL:ALL) ALL" au fichier /etc/sudoers avec la commande $ visudo .
+
+1.18 =================
+
+cmds :
+$ emerge sys-fs/quota	
+$ /etc/init.d/quota start
+$ rc-update add quota default
+$ groupadd quotagroup
+$ gpasswd --add red quotagroup
+
+Installe et configure les quotas de disques.
+Il faut ajouter l'option "usrquota" à la ligne concernant la partition à laquelle nous voulons limiter l'accès (ici /dev/sda4 aka /home) sur 
+/etc/fstab.
+
+
+cmd :$ mount -o remount /home
+Applique les changements au dossier /home.
+
+cmd :$ quotacheck --user --group --create-files /home 
+Création des fichiers de quotas nécessaires.
+
+cmd :$ quotaon --print-state --all
+Affiche si les quotas sont activés ou pas.
+
+Les quotas fonctionnent par blocs et par inode, la taille de chaque bloc est de 1Kb (1024 octets) et par des limites soft et hard.
+Nous avons besoin dans notre cas de limiter les blocs à 200Mb donc 204800 blocs, et aucune limite sur les inodes. 
+
+cmd :$ setquota -u red 204000 204800 0 0 /home
+
+
+Maintenant nous allons essayer de tester cela :
+
+cmds : 
+
+$ su red
+$ cd && dd if=/dev/zero of=f.out bs=210M count=1
+Nous obtenons une erreur après que 200Mb soient écrites.
+
+1.19 ====================
+
+cmds :
+
+$ su red
+$ cd && mkdir usr && cd usr
+$ wget https://download.open-mpi.org/release/hwloc/v2.0/hwloc-2.0.2.tar.bz2
+$ tar -xvf hwloc-2.0.2.tar.bz2
+$ cd hwloc-2.0.2
+$ ./configure --prefix=$HOME/usr
+$ make -j4 && make install
+
+Télécharge et installe hwloc dans le chemin /home/$USER/usr
+
+1.20 ====================
+
+cmd :$ echo "export PATH=$PATH:/home/$USER/usr/bin" >> ~/.bashrc && source ~/.bashrc
+Permet de rajouter /home/$USER/usr/bin aux chemins de la variable "$PATH" et donc permet d'exécuter les binaires de /home/$USER/usr/bin 
+sans devoir rentrer tout le chemin.
+
