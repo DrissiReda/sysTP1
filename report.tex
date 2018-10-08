@@ -119,7 +119,6 @@ Montage des partitions et activation du swap.
 \begin{tcolorbox}
   \begin{verbatim}
     $ links https://www.gentoo.org/downloads/mirrors/
-    $ tar xpvf stage3-*.tar.bz2 --xattrs-include='*.*' --numeric-owner
   \end{verbatim}
 \end{tcolorbox}
 Télécharger le tarball stage3.
@@ -127,7 +126,7 @@ Télécharger le tarball stage3.
 \subsection{Exercice 7}
 \begin{tcolorbox}
   \begin{verbatim}
-    $ tar xpvf stage3-*.tar.bz2 --xattrs-include='*.*' --numeric-owner
+    $ tar xvf <tarball> --xattrs-include='*.*' --numeric-owner
   \end{verbatim}
 \end{tcolorbox}
 Décompresser le tarball stage3.
@@ -135,9 +134,49 @@ Décompresser le tarball stage3.
 \subsection{Exercice 8}
 \begin{tcolorbox}
   \begin{verbatim}
-    
+    $ mirrorselect -i -o >> /mnt/gentoo/etc/portage/make.conf
   \end{verbatim}
 \end{tcolorbox}
+Choix d'un mirroir rapide.
+
+\begin{tcolorbox}
+  \begin{verbatim}
+    $ mkdir --parents /mnt/gentoo/etc/portage/repos.conf
+    $ cp /mnt/gentoo/usr/share/portage/config/repos.conf
+      /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
+  \end{verbatim}
+\end{tcolorbox}
+Configuration du repository ebuild de gentoo
+
+\begin{tcolorbox}
+  \begin{verbatim}
+    $ cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
+    $ mount --types proc /proc /mnt/gentoo/proc
+    $ mount --rbind /sys /mnt/gentoo/sys
+    $ mount --make-rslave /mnt/gentoo/sys
+    $ mount --rbind /dev /mnt/gentoo/dev
+    $ mount --make-rslave /mnt/gentoo/dev
+  \end{verbatim}
+\end{tcolorbox}
+Copie des données du DNS et montage des filesystèmes nécessaires.
+
+\begin{tcolorbox}
+  \begin{verbatim}
+    $ chroot /mnt/gentoo /bin/bash
+    $ source /etc/profile
+    $ export PS1=(chroot) $PS1
+  \end{verbatim}
+\end{tcolorbox}
+Chroot vers le nouveau système.
+
+\begin{tcolorbox}
+  \begin{verbatim}
+      $ emerge-webrsync
+  \end{verbatim}
+\end{tcolorbox}
+Configure portage, et installe le dernier snapshot depuis internet.
+
+
 \subsection{Exercice 9}
 Création du fichier /etc/locale.gen avec les locales dont on a besoin (ici fr\_FR.UTF-8).
 \begin{tcolorbox}
@@ -419,7 +458,7 @@ Nous obtenons une erreur après que 200Mb soient écrites.
   \begin{verbatim}
     $ su red
     $ cd && mkdir usr && cd usr
-    $ wget https://download.open-mpi.org/release/hwloc/v2.0/hwloc-2.0.2.tar.bz2
+    $ wget <hwloc-download-link>
     $ tar -xvf hwloc-2.0.2.tar.bz2
     $ cd hwloc-2.0.2
     $ ./configure --prefix=$HOME/usr
@@ -431,7 +470,8 @@ Télécharge et installe hwloc dans le chemin /home/\$USER/usr
 \subsection{Exercice 20}
 \begin{tcolorbox}
   \begin{verbatim}
-    $ echo "export PATH=$PATH:/home/$USER/usr/bin" >> ~/.bashrc && source ~/.bashrc
+    $ echo "export PATH=$PATH:/home/$USER/usr/bin"
+      >> ~/.bashrc && source ~/.bashrc
   \end{verbatim}
 \end{tcolorbox}
 
